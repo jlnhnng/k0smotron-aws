@@ -10,7 +10,7 @@ resource "aws_instance" "cluster-workers" {
 
   key_name                    = aws_key_pair.cluster-key.key_name
   vpc_security_group_ids      = [aws_security_group.cluster_allow_ssh.id]
-  iam_instance_profile        = "presales-cluster_host"
+  iam_instance_profile        = "${var.iam_instance_profile}"
   associate_public_ip_address = true
   source_dest_check = false
   ebs_optimized          = true

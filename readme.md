@@ -1,7 +1,7 @@
 # k0s on AWS with k0smotron
 
 This installation includes:
-- k0s incl. k0smotron
+- k0s incl. k0smotron (v0.4.2)
 - AWS Cloud Controller Manager
 - AWS EBS CSI Driver
 - AWS EBS StorageClass
@@ -24,5 +24,5 @@ et voilà, a k0s cluster with 1 controller, 1 worker, integration into AWS and k
 
 
 ### TODO
-- Make iam_instance_profile configurable
 - Make AMI configurable
+- Add Loadbalancer

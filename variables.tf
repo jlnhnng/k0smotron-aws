@@ -17,3 +17,8 @@ variable "cluster_flavor" {
   type    = string
   default = "m5.xlarge"
 }
+
+variable "iam_instance_profile" {
+  type    = string
+  default = "presales-cluster_host"
+}
