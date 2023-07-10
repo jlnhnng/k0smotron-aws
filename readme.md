@@ -35,18 +35,13 @@ metadata:
 spec:
   replicas: 1
   k0sImage: k0sproject/k0s
-  k0sVersion: v1.27.3+k0s.0
+  k0sVersion: v1.27.3-k0s.0
   service:
     type: LoadBalancer
     apiPort: 6443
     konnectivityPort: 8132
   persistence:
     type: emptyDir
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: demo
 ```
 To get kubeconfig of the newly created Control Plane, we execute the following command:
 ``` shell
@@ -54,6 +49,11 @@ kubectl get secret k0s-demo-cluster-kubeconfig -n demo -o jsonpath='{.data.value
 ```
 Now, we want to add Worker Nodes. To do that we will create a `JoinTokenRequest`:
 ``` yaml=
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
 apiVersion: k0smotron.io/v1beta1
 kind: JoinTokenRequest
 metadata:
