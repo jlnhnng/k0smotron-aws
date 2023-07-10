@@ -27,6 +27,11 @@ et voilà, a k0s cluster with 1 controller, 1 worker, integration into AWS and k
 
 Next, you can use k0smotron to create k0s control planes:
 ``` yaml=
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
 apiVersion: k0smotron.io/v1beta1
 kind: Cluster
 metadata:
@@ -49,11 +54,6 @@ kubectl get secret k0s-demo-cluster-kubeconfig -n demo -o jsonpath='{.data.value
 ```
 Now, we want to add Worker Nodes. To do that we will create a `JoinTokenRequest`:
 ``` yaml=
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: demo
----
 apiVersion: k0smotron.io/v1beta1
 kind: JoinTokenRequest
 metadata:
