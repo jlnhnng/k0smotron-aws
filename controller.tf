@@ -1,7 +1,7 @@
 resource "aws_instance" "cluster-controller" {
   count         = var.controller_count
   ami           = data.aws_ami.ubuntu.id
-  instance_type = var.cluster_flavor
+  instance_type = var.controller_flavor
 
   tags = {
     Name = "${var.cluster_name}-controller-${count.index + 1}",
@@ -54,7 +54,7 @@ EOF
   }
 
   provisioner "file" {
-    source      = "./manifests/k0smotron.yaml"
+    source      = "./manifests/k0smotron-v0.4.2.yaml"
     destination = "/tmp/k0smotron.yaml"
 
     connection {

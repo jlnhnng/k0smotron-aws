@@ -1,7 +1,7 @@
 # k0s on AWS with k0smotron
 
 This installation includes:
-- k0s incl. k0smotron (v0.4.2)
+- k0s incl. k0smotron (v0.5.1)
 - AWS Cloud Controller Manager 
 - AWS EBS CSI Driver
 - AWS EBS StorageClass
@@ -81,8 +81,3 @@ sudo k0s start
 ### ClusterAPI
 Since this is only half the solution and we don't want to manually create VMs for k0s workers, there is a close integration between k0smotron and ClusterAPI.
 You can find a detailed guide on how this works [here](https://docs.k0smotron.io/v0.4.2/cluster-api/).
-
-
-### TODO
-- Make AMI configurable
-- Add Loadbalancer

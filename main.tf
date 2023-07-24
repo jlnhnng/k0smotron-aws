@@ -3,7 +3,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-central-1"
+  region = "${var.cluster_region}"
 }
 
 resource "tls_private_key" "k0sctl" {
@@ -24,14 +24,14 @@ resource "local_file" "aws_private_pem" {
 }
 
 resource "aws_security_group" "cluster_allow_ssh" {
-  name        = format("%s-allow-ssh", var.cluster_name)
-  description = "Allow ssh inbound traffic"
+  name        = format("%s-allow-all", var.cluster_name)
+  description = "Allow all inbound traffic"
   // vpc_id      = aws_vpc.cluster-vpc.id
 
   // Allow all incoming and outgoing ports.
   // TODO: need to create a more restrictive policy
   ingress {
-    description = "SSH from VPC"
+    description = "ALL"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -46,7 +46,7 @@ resource "aws_security_group" "cluster_allow_ssh" {
   }
 
   tags = {
-    Name = format("%s-allow-ssh", var.cluster_name)
+    Name = format("%s-allow-all", var.cluster_name)
   }
 }
 
@@ -66,6 +66,88 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"]
 }
 
+resource "aws_elb" "k0s_elb" {
+  count = var.controller_count > 1 ? 1 : 0
+  name               = "${var.cluster_name}-elb"
+  availability_zones = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
+  cross_zone_load_balancing   = true
+  idle_timeout               = 400
+  connection_draining        = true
+  connection_draining_timeout = 400
+
+  listener {
+    instance_port     = 6443
+    instance_protocol = "tcp"
+    lb_port           = 6443
+    lb_protocol       = "tcp"
+  }
+
+  listener {
+    instance_port     = 8132
+    instance_protocol = "tcp"
+    lb_port           = 8132
+    lb_protocol       = "tcp"
+  }
+
+  listener {
+    instance_port     = 9443
+    instance_protocol = "tcp"
+    lb_port           = 9443
+    lb_protocol       = "tcp"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 5
+    target              = "TCP:6443"
+    interval            = 10
+  }
+
+  tags = {
+    Name = "${var.cluster_name}-elb"
+  }
+}
+
+resource "aws_elb_attachment" "elb_attachment" {
+  count    = var.controller_count > 0 ? var.controller_count : 0
+  elb      = aws_elb.k0s_elb[0].id
+  instance = aws_instance.cluster-controller[count.index].id
+}
+
+resource "aws_security_group" "elb_sg" {
+  count       = var.controller_count > 1 ? 1 : 0
+  name        = "${var.cluster_name}-elb-sg"
+  description = "ELB security group"
+
+  ingress {
+    from_port   = 6443
+    to_port     = 6443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8132
+    to_port     = 8132
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
 
 locals {
   k0s_tmpl = {
@@ -87,7 +169,7 @@ locals {
         }
       ]
       k0s = {
-        version = "1.26.2+k0s.0"
+        version = "1.27.3+k0s.0"
         dynamicConfig = false
         config = {
           apiVersion = "k0s.k0sproject.io/v1beta1"
@@ -97,12 +179,12 @@ locals {
           }
           spec = {
             api = {
-              address = aws_instance.cluster-controller[0].public_ip
-              externalAddress = aws_instance.cluster-controller[0].public_ip
+              address = var.controller_count > 1 ? aws_elb.k0s_elb[0].dns_name : aws_instance.cluster-controller[0].public_ip
+              externalAddress = var.controller_count > 1 ? aws_elb.k0s_elb[0].dns_name : aws_instance.cluster-controller[0].public_ip
               k0sApiPort = 9443
               port = 6443
               sans = [
-                aws_instance.cluster-controller[0].public_ip
+                var.controller_count > 1 ? aws_elb.k0s_elb[0].dns_name : aws_instance.cluster-controller[0].public_ip
               ]
               tunneledNetworkingMode = false
             }
@@ -155,6 +237,9 @@ locals {
                         - --allocate-node-cidrs=false
                         - --cluster-cidr=172.20.0.0/16
                         - --cluster-name="${var.cluster_name}"
+                      image:
+                        repository: registry.k8s.io/provider-aws/cloud-controller-manager
+                        tag: v1.26.1
                       nodeSelector:
                         node-role.kubernetes.io/control-plane: "true"
                     EOT
