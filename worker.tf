@@ -5,7 +5,8 @@ resource "aws_instance" "cluster-workers" {
   tags = {
     Name = "${var.cluster_name}-worker-${count.index + 1}",
     "Role" = "worker",
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned",
+    "Creator" = "jhennig@mirantis.com"
   }
 
   key_name                    = aws_key_pair.cluster-key.key_name

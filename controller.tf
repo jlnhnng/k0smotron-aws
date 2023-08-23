@@ -6,7 +6,8 @@ resource "aws_instance" "cluster-controller" {
   tags = {
     Name = "${var.cluster_name}-controller-${count.index + 1}",
     "Role" = "controller+worker",
-    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned",
+    "Creator" = "jhennig@mirantis.com"
   }
   key_name                    = aws_key_pair.cluster-key.key_name
   vpc_security_group_ids      = [aws_security_group.cluster_allow_ssh.id]
@@ -54,7 +55,7 @@ EOF
   }
 
   provisioner "file" {
-    source      = "./manifests/k0smotron-v0.4.2.yaml"
+    source      = "./manifests/k0smotron.yaml"
     destination = "/tmp/k0smotron.yaml"
 
     connection {

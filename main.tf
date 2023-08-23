@@ -110,9 +110,11 @@ resource "aws_elb" "k0s_elb" {
 }
 
 resource "aws_elb_attachment" "elb_attachment" {
-  count    = var.controller_count > 0 ? var.controller_count : 0
-  elb      = aws_elb.k0s_elb[0].id
+  count = var.controller_count > 1 ? var.controller_count : 0
+  elb = aws_elb.k0s_elb[0].id
   instance = aws_instance.cluster-controller[count.index].id
+
+  depends_on = [aws_elb.k0s_elb]
 }
 
 resource "aws_security_group" "elb_sg" {
@@ -169,7 +171,7 @@ locals {
         }
       ]
       k0s = {
-        version = "1.27.3+k0s.0"
+        version = "1.27.4+k0s.0"
         dynamicConfig = false
         config = {
           apiVersion = "k0s.k0sproject.io/v1beta1"
