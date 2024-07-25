@@ -31,3 +31,5 @@ terraform.rc
 
 # Custom
 *.pem
+kubeconfig
+k0sctl.yaml

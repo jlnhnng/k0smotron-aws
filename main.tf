@@ -55,7 +55,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   filter {
@@ -171,7 +171,7 @@ locals {
         }
       ]
       k0s = {
-        version = "1.27.4+k0s.0"
+        version = "1.30.2+k0s.0"
         dynamicConfig = false
         config = {
           apiVersion = "k0s.k0sproject.io/v1beta1"
@@ -201,6 +201,7 @@ locals {
               }
             }
             network = {
+              provider = "calico"
               kubeProxy = {
                 disabled = false
                 mode = "iptables"
@@ -231,7 +232,7 @@ locals {
                     name = "a-aws-cloud-controller-manager"
                     chartname = "aws-cloud-controller-manager/aws-cloud-controller-manager"
                     namespace = "kube-system"
-                    version = "0.0.7"
+                    version = "0.0.8"
                     values = <<-EOT
                       args:
                         - --v=2

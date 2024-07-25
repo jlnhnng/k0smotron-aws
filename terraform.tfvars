@@ -1,4 +1,4 @@
-cluster_name = "k0smotron-cluster"
+cluster_name = "k0smotron-mgmt-cluster"
 cluster_region = "eu-central-1"
 controller_count = 1
 controller_flavor = "m5.xlarge"

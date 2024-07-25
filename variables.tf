@@ -1,6 +1,6 @@
 variable "cluster_name" {
   type    = string
-  default = "k0smotron-cluster"
+  default = "k0smotron-mgmt-cluster"
 }
 
 variable "controller_count" {

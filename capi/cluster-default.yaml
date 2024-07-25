@@ -1,0 +1,124 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: k0s-aws-default
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks: [10.244.0.0/16]
+    services:
+      cidrBlocks: [10.96.0.0/12]
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0sControlPlane
+    name: k0s-aws-default-cp
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: AWSCluster
+    name: k0s-aws-default
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: K0sControlPlane
+metadata:
+  name: k0s-aws-default-cp
+spec:
+  replicas: 1
+  k0sConfigSpec:
+    k0s:
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: ClusterConfig
+      metadata:
+        name: k0s
+      spec:
+        api:
+          extraArgs:
+            anonymous-auth: "true" # anonymous-auth=true is needed for k0s to allow unauthorized health-checks on /healthz 
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: AWSMachineTemplate
+      name: k0s-aws-default-mt
+      namespace: default
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSCluster
+metadata:
+  name: k0s-aws-default
+  namespace: default
+  annotations:
+    cluster.x-k8s.io/managed-by: k0smotron # This marks the base infra to be self managed. The value of the annotation is irrelevant, as long as there is a value.
+spec:
+  region: eu-central-1
+  sshKeyName: ssh-key
+  network:
+    vpc:
+      id: vpc-095897d5b42a2181e # Machines will be created in this VPC
+    subnets:
+      - id: subnet-07d4ba06edf1f25c0 # Machines will be created in this Subnet
+        availabilityZone: eu-central-1a
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: k0s-aws-default-md
+  namespace: default
+spec:
+  clusterName: k0s-aws-default
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: k0s-aws-default
+      pool: worker-pool-1
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: k0s-aws-default
+        pool: worker-pool-1
+    spec:
+      clusterName: k0s-aws-default
+      failureDomain: eu-central-1a
+      bootstrap:
+        configRef: # This triggers our controller to create cloud-init secret
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: K0sWorkerConfigTemplate
+          name: k0s-aws-default-machine-config
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: AWSMachineTemplate
+        name: k0s-aws-default-mt
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSMachineTemplate
+metadata:
+  name: k0s-aws-default-mt
+  namespace: default
+spec:
+  template:
+    spec:
+      ami:
+        # Replace with your AMI ID
+        id: ami-07652eda1fbad7432 # Ubuntu 22.04 in eu-central-1 
+      instanceType: t3.large
+      iamInstanceProfile: nodes.cluster-api-provider-aws.sigs.k8s.io # Instance Profile created by `clusterawsadm bootstrap iam create-cloudformation-stack`
+      cloudInit:
+        # Makes CAPA use k0s bootstrap cloud-init directly and not via SSM
+        # Simplifies the VPC setup as we do not need custom SSM endpoints etc.
+        insecureSkipSecretsManager: true
+      subnet:
+        # Make sure this matches the failureDomain in the Machine, i.e. you pick the subnet ID for the AZ
+        id: subnet-07d4ba06edf1f25c0
+      additionalSecurityGroups:
+        - id: sg-0820c3a5d09a3f97c # Needs to be belong to the subnet
+      sshKeyName: jhennig-key
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: K0sWorkerConfigTemplate
+metadata:
+  name: k0s-aws-default-machine-config
+spec:
+  template:
+    spec:
+      version: v1.30.2+k0s.0
+      # More details of the worker configuration can be set here
+---

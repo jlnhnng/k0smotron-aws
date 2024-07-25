@@ -43,40 +43,6 @@ EOF
     }
   }
 
-  provisioner "remote-exec" {
-    inline = ["sudo mkdir -p /var/lib/k0s/manifests/k0smotron"]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = tls_private_key.k0sctl.private_key_pem
-      host        = self.public_ip
-    }
-  }
-
-  provisioner "file" {
-    source      = "./manifests/k0smotron.yaml"
-    destination = "/tmp/k0smotron.yaml"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = tls_private_key.k0sctl.private_key_pem
-      host        = self.public_ip
-    }
-  }
-
-  provisioner "remote-exec" {
-    inline = ["sudo mv /tmp/k0smotron.yaml /var/lib/k0s/manifests/k0smotron/k0smotron.yaml"]
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = tls_private_key.k0sctl.private_key_pem
-      host        = self.public_ip
-    }
-  }
-
   provisioner "file" {
     source      = "./manifests/aws-ebs-storageclass.yaml"
     destination = "/tmp/aws-ebs-storageclass.yaml"
@@ -99,5 +65,4 @@ EOF
       host        = self.public_ip
     }
   }
-
 }
